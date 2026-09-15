@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+    tools {
+        maven 'mymaven'
+    }
+    stages {
+        stage ("code") {
+            steps {
+                //this stage is used to get the code from github
+                git 'https://github.com/devops0014/one.git'
+            }
+        }
+        stage ("Build") {
+            steps {
+                sh "mvn clean install"
+            }
+        }
+        stage ("Artifact") {
+            steps {
+                //your task to integrate nexus here
+            }
+        }
+        stage ("Deploy") {
+            steps {
+                deploy adapters: [tomcat9(alternativeDeploymentContext: '', credentialsId: 'tomcat', path: '', url: 'http://3.85.204.240:8080/')], contextPath: 'myapp', war: 'target/*.war'
+            }
+        }
+    }
+}
