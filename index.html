@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nginx Test | Fresh Bites Order</title>
+    <!-- Simple favicon to avoid 404 noise (emoji-based) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍕</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #fef9f1 0%, #fff4e6 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            margin: 0;
+        }
+
+        .order-card {
+            max-width: 880px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 4px 18px 0 rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(2px);
+        }
+
+        .header {
+            background: #1e2b2f;
+            background-image: radial-gradient(circle at 20% 30%, #2c3e44 0%, #0f1a1d 100%);
+            padding: 1.8rem 2.2rem;
+            color: #f7f3e9;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            border-bottom: 4px solid #e6b15c;
+        }
+
+        .header h1 {
+            font-weight: 600;
+            font-size: 1.9rem;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header h1 span {
+            background: #e6b15c;
+            color: #1e2b2f;
+            font-size: 1.5rem;
+            padding: 0.2rem 0.8rem;
+            border-radius: 40px;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+
+        .nginx-badge {
+            background: #2e4b4f;
+            padding: 0.5rem 1.3rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #dfd9cc;
+            border: 1px solid #5f7a7e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: inset 0 1px 4px rgba(0,0,0,0.3);
+        }
+
+        .nginx-badge i {
+            font-style: normal;
+            font-size: 1.2rem;
+            filter: drop-shadow(0 0 4px #6f9b9f);
+        }
+
+        .content {
+            padding: 2.2rem 2.2rem 2rem;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.8rem;
+        }
+
+        .menu-item {
+            background: #ffffff;
+            border-radius: 1.8rem;
+            padding: 1.4rem 1.2rem 1.2rem;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.03);
+            border: 1px solid #f0e7db;
+            transition: transform 0.15s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 30px -12px rgba(0, 0, 0, 0.15);
+            border-color: #e6d9c8;
+        }
+
+        .item-emoji {
+            font-size: 2.8rem;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.1));
+        }
+
+        .item-name {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: #1f2e32;
+            margin-bottom: 0.3rem;
+            letter-spacing: -0.3px;
+        }
+
+        .item-desc {
+            color: #7a6a5c;
+            font-size: 0.9rem;
+            margin-bottom: 1.2rem;
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        .item-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+        }
+
+        .price {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: #1f2e32;
+            letter-spacing: -0.5px;
+        }
+
+        .price small {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #9a8b7c;
+            margin-left: 2px;
+        }
+
+        .add-btn {
+            background: #1e2b2f;
+            border: none;
+            color: white;
+            width: 42px;
+            height: 42px;
+            border-radius: 30px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            font-weight: 400;
+            line-height: 1;
+        }
+
+        .add-btn:hover {
+            background: #e6b15c;
+            color: #1e2b2f;
+            transform: scale(1.03);
+        }
+
+        .add-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Cart summary */
+        .cart-summary {
+            background: #faf6f0;
+            border-radius: 2rem;
+            padding: 1.8rem 1.8rem 1.8rem 2rem;
+            border: 1px solid #ede3d7;
+            box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.8), 0 8px 18px rgba(0, 0, 0, 0.04);
+            margin-bottom: 1.5rem;
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .cart-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e2b2f;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .cart-header h2 span {
+            background: #e6b15c;
+            padding: 0.15rem 0.9rem;
+            border-radius: 40px;
+            font-size: 1rem;
+            color: #1e2b2f;
+        }
+
+        .cart-items {
+            list-style: none;
+            margin-bottom: 1.5rem;
+            max-height: 240px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .cart-items li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 0;
+            border-bottom: 1px dashed #dccfc1;
+            color: #2c3e44;
+            font-weight: 500;
+            font-size: 1.05rem;
+        }
+
+        .cart-items li:last-child {
+            border-bottom: none;
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .item-qty {
+            background: #e2d9cf;
+            border-radius: 30px;
+            padding: 0.1rem 0.7rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1e2b2f;
+        }
+
+        .item-price {
+            font-weight: 600;
+            color: #1e2b2f;
+        }
+
+        .empty-cart-message {
+            text-align: center;
+            color: #a1907e;
+            font-style: italic;
+            padding: 1rem 0 0.5rem;
+            font-size: 1rem;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1e2b2f;
+            padding-top: 1rem;
+            border-top: 2px solid #e6d9c8;
+            margin-bottom: 1.8rem;
+        }
+
+        .total-row span:last-child {
+            color: #b1712b;
+            font-size: 2rem;
+            letter-spacing: -1px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 50px;
+            padding: 1rem 2.2rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: white;
+            color: #1e2b2f;
+            border: 1px solid #d9cdbd;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.02);
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #1e2b2f;
+            color: white;
+            border: 1px solid #1e2b2f;
+            box-shadow: 0 10px 18px -6px rgba(30, 43, 47, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #2c3f45;
+            border-color: #2c3f45;
+        }
+
+        .btn-secondary:hover {
+            background: #f3ede5;
+            border-color: #cbbaa8;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .footer-note {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: #b7a99b;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            border-top: 1px solid #f0e7db;
+            padding-top: 1.3rem;
+        }
+
+        .footer-note code {
+            background: #ece3d9;
+            padding: 0.2rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            color: #3d2e24;
+        }
+
+        /* simple scrollbar */
+        .cart-items::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .cart-items::-webkit-scrollbar-track {
+            background: #ede3d7;
+            border-radius: 10px;
+        }
+
+        .cart-items::-webkit-scrollbar-thumb {
+            background: #c7b5a4;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="order-card">
+        <div class="header">
+            <h1>
+                🍽️ Fresh Bites
+                <span>order</span>
+            </h1>
+            <div class="nginx-badge">
+                <i>⚡</i> nginx test • v1.0
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- menu items -->
+            <div class="menu-grid" id="menuGrid">
+                <!-- item 1 -->
+                <div class="menu-item" data-id="1" data-name="Margherita Pizza" data-price="12.90">
+                    <div class="item-emoji">🍕</div>
+                    <div class="item-name">Margherita Pizza</div>
+                    <div class="item-desc">San Marzano tomato, fresh mozzarella, basil</div>
+                    <div class="item-footer">
+                        <div class="price">$12.90 <small></small></div>
+                        <button class="add-btn" aria-label="Add Margherita Pizza">+</button>
+                    </div>
+                </div>
+                <!-- item 2 -->
+                <div class="menu-item" data-id="2" data-name="Truffle Pasta" data-price="18.50">
+                    <div class="item-emoji">🍝</div>
+                    <div class="item-name">Truffle Pasta</div>
+                    <div class="item-desc">Creamy tagliatelle, black truffle, parmesan</div>
+                    <div class="item-footer">
+                        <div class="price">$18.50 <small></small></div>
+                        <button class="add-btn" aria-label="Add Truffle Pasta">+</button>
+                    </div>
+                </div>
+                <!-- item 3 -->
+                <div class="menu-item" data-id="3" data-name="Avocado Toast" data-price="9.20">
+                    <div class="item-emoji">🥑</div>
+                    <div class="item-name">Avocado Toast</div>
+                    <div class="item-desc">Sourdough, smashed avocado, chili flakes, lime</div>
+                    <div class="item-footer">
+                        <div class="price">$9.20 <small></small></div>
+                        <button class="add-btn" aria-label="Add Avocado Toast">+</button>
+                    </div>
+                </div>
+                <!-- item 4 -->
+                <div class="menu-item" data-id="4" data-name="Berry Smoothie" data-price="7.80">
+                    <div class="item-emoji">🫐</div>
+                    <div class="item-name">Berry Smoothie</div>
+                    <div class="item-desc">Mixed berries, banana, almond milk, honey</div>
+                    <div class="item-footer">
+                        <div class="price">$7.80 <small></small></div>
+                        <button class="add-btn" aria-label="Add Berry Smoothie">+</button>
+                    </div>
+                </div>
+                <!-- item 5 -->
+                <div class="menu-item" data-id="5" data-name="Caesar Salad" data-price="11.30">
+                    <div class="item-emoji">🥗</div>
+                    <div class="item-name">Caesar Salad</div>
+                    <div class="item-desc">Romaine, croutons, parmesan, house caesar dressing</div>
+                    <div class="item-footer">
+                        <div class="price">$11.30 <small></small></div>
+                        <button class="add-btn" aria-label="Add Caesar Salad">+</button>
+                    </div>
+                </div>
+                <!-- item 6 -->
+                <div class="menu-item" data-id="6" data-name="Chocolate Lava" data-price="8.40">
+                    <div class="item-emoji">🍫</div>
+                    <div class="item-name">Chocolate Lava</div>
+                    <div class="item-desc">Warm molten cake, vanilla bean ice cream</div>
+                    <div class="item-footer">
+                        <div class="price">$8.40 <small></small></div>
+                        <button class="add-btn" aria-label="Add Chocolate Lava">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- cart summary -->
+            <div class="cart-summary">
+                <div class="cart-header">
+                    <h2>
+                        🛒 Your order
+                        <span id="cartCount">0</span>
+                    </h2>
+                </div>
+                <ul class="cart-items" id="cartItemsList">
+                    <li class="empty-cart-message">Your cart is empty — add something delicious</li>
+                </ul>
+                <div class="total-row">
+                    <span>Total</span>
+                    <span id="totalPrice">$0.00</span>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-secondary" id="clearCartBtn" aria-label="Clear order">Clear</button>
+                    <button class="btn btn-primary" id="checkoutBtn" aria-label="Place order">Place order →</button>
+                </div>
+            </div>
+
+            <!-- footer with nginx hint -->
+            <div class="footer-note">
+                <span>✅ Test page served by <code>nginx</code></span>
+                <span>🍕 fresh bites • demo order</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // Cart state: array of { id, name, price, qty }
+            let cart = [];
+
+            // DOM elements
+            const cartItemsList = document.getElementById('cartItemsList');
+            const cartCountSpan = document.getElementById('cartCount');
+            const totalPriceSpan = document.getElementById('totalPrice');
+            const clearCartBtn = document.getElementById('clearCartBtn');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            const menuGrid = document.getElementById('menuGrid');
+
+            // Utility: format price with 2 decimals and $ sign
+            const formatPrice = (value) => {
+                return '$' + value.toFixed(2);
+            };
+
+            // Recalculate totals and update UI
+            function renderCart() {
+                // Update count
+                const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+                cartCountSpan.textContent = totalItems;
+
+                // Clear current list (keep empty message if needed)
+                if (cart.length === 0) {
+                    cartItemsList.innerHTML = '<li class="empty-cart-message">Your cart is empty — add something delicious</li>';
+                } else {
+                    // Build list items
+                    let html = '';
+                    cart.forEach(item => {
+                        const itemTotal = item.price * item.qty;
+                        html += `
+                            <li>
+                                <div class="item-info">
+                                    <span>${item.name}</span>
+                                    <span class="item-qty">x${item.qty}</span>
+                                </div>
+                                <span class="item-price">${formatPrice(itemTotal)}</span>
+                            </li>
+                        `;
+                    });
+                    cartItemsList.innerHTML = html;
+                }
+
+                // Update total price
+                const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                totalPriceSpan.textContent = formatPrice(total);
+            }
+
+            // Add item to cart (or increment qty)
+            function addToCart(id, name, price) {
+                // Look for existing item
+                const existing = cart.find(item => item.id === id);
+                if (existing) {
+                    existing.qty += 1;
+                } else {
+                    cart.push({ id, name, price: parseFloat(price), qty: 1 });
+                }
+                renderCart();
+            }
+
+            // Clear entire cart
+            function clearCart() {
+                cart = [];
+                renderCart();
+            }
+
+            // Checkout / place order simulation (for nginx test)
+            function checkout() {
+                if (cart.length === 0) {
+                    alert('🍽️ Your cart is empty. Add some dishes first!');
+                    return;
+                }
+                const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+                const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                alert(`✅ Order placed (demo)!\n\n${totalItems} item(s) • Total: ${formatPrice(totalAmount)}\n\nThank you for testing nginx!`);
+                // Optionally clear cart after checkout? We'll leave it, but you could uncomment:
+                // clearCart();
+            }
+
+            // Event delegation for menu add buttons
+            menuGrid.addEventListener('click', (e) => {
+                const addBtn = e.target.closest('.add-btn');
+                if (!addBtn) return;
+
+                // Find closest menu-item with data attributes
+                const menuItem = addBtn.closest('.menu-item');
+                if (!menuItem) return;
+
+                const id = menuItem.dataset.id;
+                const name = menuItem.dataset.name;
+                const price = menuItem.dataset.price;
+
+                if (id && name && price) {
+                    addToCart(id, name, price);
+                }
+            });
+
+            // Clear cart button
+            clearCartBtn.addEventListener('click', clearCart);
+
+            // Checkout button
+            checkoutBtn.addEventListener('click', checkout);
+
+            // Initial render (empty cart message)
+            renderCart();
+
+            // Small extra: add keyboard / accessibility note (not needed but fine)
+            // Also, set item prices in the menu (already hardcoded but let's ensure data is consistent)
+            // (we used data-* so everything is fine)
+        })();
+    </script>
+</body>
+</html>
